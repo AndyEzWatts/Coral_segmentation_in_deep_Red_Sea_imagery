@@ -1,0 +1,68 @@
+# Training configuration for YOLOv11-seg
+# Run:          python Scripts/train.py --config configs/train_config.yaml
+# CLI override: python Scripts/train.py --config configs/train_config.yaml --epochs 200 --batch 2
+# Enable W&B:   python Scripts/train.py --config configs/train_config.yaml --wandb
+
+# -------------------------------------------------------------------
+# Model
+# -------------------------------------------------------------------
+model: yolo11x-seg   # Ultralytics model name; weights are auto-downloaded on first run
+imgsz: 1024          # Input image size in pixels (square)
+
+# -------------------------------------------------------------------
+# Dataset  <-- point this at your YOLO dataset YAML
+# -------------------------------------------------------------------
+data: configs/data_example_seg.yaml   # path to YOLO dataset YAML (copy data_example_seg.yaml and edit)
+
+# -------------------------------------------------------------------
+# Training schedule
+# -------------------------------------------------------------------
+epochs: 100          # total training epochs
+batch: 4             # batch size (reduce if GPU OOM; increase for faster training)
+optimizer: AdamW     # optimizer: SGD | Adam | AdamW
+lr0: 0.00001         # initial learning rate
+lrf: 0.001           # final learning rate as a fraction of lr0 (used by cosine scheduler)
+patience: 90         # early stopping: stop if no improvement for this many epochs
+cos_lr: true         # use cosine annealing learning rate schedule
+fraction: 1.0        # fraction of dataset to use; set < 1.0 for quick smoke tests
+workers: 4           # dataloader worker threads (reduce to 0 on Windows if errors occur)
+pretrained: true     # initialise from pretrained COCO weights before fine-tuning
+label_smoothing: 0.0 # label smoothing epsilon (0 = disabled)
+dropout: 0.0         # dropout rate in the detection head (0 = disabled)
+warmup_epochs: 0     # number of LR warmup epochs at the start of training
+
+# -------------------------------------------------------------------
+# Augmentation
+# Applied on top of the output from data_augmentation.py.
+# Mosaic and Mixup are disabled here because they are already
+# applied (with polygon-aware mask handling) by data_augmentation.py.
+# -------------------------------------------------------------------
+augment: true        # enable Ultralytics built-in augmentations
+mosaic: 0.0          # mosaic probability (disabled — already done by data_augmentation.py)
+scale: 0.5           # random scale: image resized by ± this fraction
+translate: 0.1       # random translation: shifted by ± this fraction of image size
+degrees: 0.0         # random rotation: ± degrees (0 = disabled for underwater imagery)
+flipud: 0.0          # vertical flip probability (0 = disabled)
+fliplr: 0.5          # horizontal flip probability
+mixup: 0.0           # mixup probability (disabled — already done by data_augmentation.py)
+hsv_h: 0.01          # HSV hue jitter magnitude
+hsv_s: 0.6           # HSV saturation jitter magnitude
+hsv_v: 0.6           # HSV value (brightness) jitter magnitude
+
+# -------------------------------------------------------------------
+# Segmentation-specific
+# -------------------------------------------------------------------
+single_cls: false    # treat all classes as one (set true for class-agnostic detection)
+overlap_mask: false  # allow instance masks to overlap (false = cleaner boundaries)
+rect: false          # rectangular training batches (false = square; true can speed up training)
+
+# -------------------------------------------------------------------
+# Output
+# -------------------------------------------------------------------
+project: results     # root output directory; run saved to {project}/{name}/
+name: run            # run name; best weights end up at {project}/{name}/weights/best.pt
+
+# -------------------------------------------------------------------
+# Weights & Biases (only used when --wandb flag is passed to train.py)
+# -------------------------------------------------------------------
+wandb_project: Coral-YOLO11x-Seg   # W&B project name

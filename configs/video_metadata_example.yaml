@@ -1,0 +1,61 @@
+# ROV video analysis configuration
+# Run: python Scripts/automatic_detection.py --config configs/video_metadata_example.yaml
+#
+# Copy this file and fill in your own values.
+# All paths are relative to the repo root (the directory containing Scripts/, configs/, etc.)
+# or can be absolute paths.
+
+# -------------------------------------------------------------------
+# OCR regions — relative coordinates [center_x, center_y, width, height]
+# Values are fractions of the frame dimensions (0.0–1.0).
+# These are camera-rig specific: calibrate by pausing a frame and
+# measuring where the depth/heading overlays appear on screen.
+# -------------------------------------------------------------------
+roi_heading_rel: [0.4997, 0.0403, 0.0221, 0.0269]   # region containing the compass heading readout
+roi_depth_rel:   [0.9501, 0.3522, 0.0341, 0.0294]   # region containing the depth readout
+
+# Tesseract binary path.
+# Set to null to use the system PATH (recommended on Linux/macOS after apt/brew install).
+# Windows example: C:/Program Files/Tesseract-OCR/tesseract.exe
+tesseract_path: null
+
+# -------------------------------------------------------------------
+# Detection settings
+# -------------------------------------------------------------------
+frame_interval_seconds: 30   # extract one frame every N seconds for analysis
+conf_threshold: 0.1          # YOLO confidence threshold (detections below this are ignored)
+iou_threshold: 0.1           # YOLO IoU threshold for NMS
+
+# Physical distance between the two laser dots (cm).
+# Used to convert pixel distance → cm/pixel → visible seafloor area (m²) per frame.
+actual_laser_distance_cm: 10
+
+# -------------------------------------------------------------------
+# Model and output paths
+# -------------------------------------------------------------------
+model_path: results/run/weights/best.pt          # path to trained YOLO weights
+output_dir: results/rov_output                   # root directory for all output
+combined_output_path: results/rov_output/combined_results.xlsx   # merged Excel across all videos
+
+# -------------------------------------------------------------------
+# Video list — add one entry per ROV transect video
+# -------------------------------------------------------------------
+videos:
+  - video_path: Video_example/CHR0389_LowerMesophotic.mp4
+    # Directory of per-frame laser-dot label files in YOLO bounding-box format.
+    # Each .txt file corresponds to one video frame and contains exactly 2 lines
+    # (one per laser dot): class_id  x_center  y_center  width  height
+    laser_coordinates_dir: Video_example/Laser_CHR0389_LowerMesophotic/train/labels
+
+    rov_dive: CHR0389              # dive identifier — used as the output sub-folder name
+    date: "2023-04-15"             # survey date (YYYY-MM-DD)
+    transect: LowerMesophotic      # transect name or type (used for summary grouping)
+    start_time: "09:30"            # transect start time (HH:MM)
+    end_time: "11:00"              # transect end time (HH:MM)
+    total_time: "1h30m"            # total transect duration (human-readable)
+    total_video_time_seconds: 5400 # total video duration in seconds
+    distance_covered: 450          # distance covered in meters
+    start_latitude: 22.123         # GPS latitude at transect start
+    start_longitude: 38.456        # GPS longitude at transect start
+    habitat_type: rocky_reef       # habitat classification (used for summary grouping)
+    temperature: "22.5"            # water temperature in °C

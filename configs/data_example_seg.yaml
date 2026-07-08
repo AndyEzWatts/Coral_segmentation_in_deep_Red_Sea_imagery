@@ -1,0 +1,11 @@
+# Example YOLO dataset config — copy and rename for your taxon
+# Replace all placeholder values before running train.py
+
+path: /path/to/your/dataset_Aug    # absolute path to augmented dataset root
+
+train: img_dir/train
+val:   img_dir/val
+test:  img_dir/test
+
+nc: 1                              # number of classes
+names: ['your_class_name']         # class name list; add more entries if nc > 1
