@@ -15,6 +15,25 @@ Instance segmentation of deep-sea corals in ROV imagery using YOLOv11x-seg. The 
 
 ---
 
+## Data availability
+
+The trained model weights and an example ROV video are hosted on Zenodo,
+because they are too large for GitHub.
+
+- **`Weights/`** — trained weights for the coral segmentation model, ready
+  for inference (Steps 2–4).
+- **`Video_example/`** — an example ROV video transect
+  (`CHR0389_LowerMesophotic.mp4`) used for the video analysis in Step 4.
+
+Download them from Zenodo and place the `Weights/` and `Video_example/`
+folders in the repository root, keeping the folder names unchanged.
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19703699.svg)](https://doi.org/10.5281/zenodo.19703699)
+
+Zenodo: https://doi.org/10.5281/zenodo.19703699
+
+---
+
 ## Installation
 
 **1. Create and activate the conda environment:**
@@ -130,6 +149,8 @@ python Scripts/train.py --config configs/train_config.yaml \
 
 Best weights are saved to `results/run/weights/best.pt` (configurable via `--project` and `--name`).
 
+> Pre-trained weights are on Zenodo (see [Data availability]).
+
 ---
 
 ### Step 3 — Image Inference
@@ -157,6 +178,9 @@ python Scripts/inference_images.py \
 ---
 
 ### Step 4 — ROV Video Analysis
+
+> The example video is on Zenodo (see [Data availability]),
+> not in this repo.
 
 Extracts frames at a fixed interval, runs YOLO detection, reads depth and heading from the video overlay via OCR, and computes laser-calibrated coral density (corals/m²). Outputs per-video Excel files, a combined file, and a summary sheet grouped by habitat and transect type.
 
