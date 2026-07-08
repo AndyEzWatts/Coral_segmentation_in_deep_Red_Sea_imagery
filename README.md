@@ -149,7 +149,7 @@ python Scripts/train.py --config configs/train_config.yaml \
 
 Best weights are saved to `results/run/weights/best.pt` (configurable via `--project` and `--name`).
 
-> Pre-trained weights are on Zenodo (see [Data availability]).
+> Pre-trained weights are on Zenodo (see [Data availability](#data-availability)).
 
 ---
 
@@ -179,7 +179,7 @@ python Scripts/inference_images.py \
 
 ### Step 4 — ROV Video Analysis
 
-> The example video is on Zenodo (see [Data availability]),
+> The example video is on Zenodo (see [Data availability](#data-availability)),
 > not in this repo.
 
 Extracts frames at a fixed interval, runs YOLO detection, reads depth and heading from the video overlay via OCR, and computes laser-calibrated coral density (corals/m²). Outputs per-video Excel files, a combined file, and a summary sheet grouped by habitat and transect type.
