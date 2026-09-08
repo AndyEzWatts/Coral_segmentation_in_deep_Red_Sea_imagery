@@ -70,6 +70,13 @@ def main():
             job_type="train",
         )
         run_name = wandb_run.name
+        # Under a real sweep (`wandb agent ...`), W&B injects the trial's
+        # chosen hyperparameters into wandb_run.config *after* init, keyed
+        # by the parameter names in the sweep YAML. Pull them back into cfg
+        # so the model.train() call below (which reads from cfg) actually
+        # uses the sweep-selected values instead of always training with
+        # the local YAML/CLI defaults.
+        cfg.update(dict(wandb_run.config))
 
     data_path = cfg["data"]
     if not os.path.exists(data_path):
@@ -137,11 +144,18 @@ def main():
             verbose=True,
         )
 
-        print("Running validation (test split)...")
+        print("Running validation (test split, imgsz=1920)...")
+        # NOTE: fixed at 1920 regardless of training imgsz. This is
+        # deliberate, not a bug -- 1920x1080 is the native resolution of
+        # the source imagery, and it's what the manuscript's reported
+        # numbers and every deployment script in this project evaluate
+        # at. Training happens at a lower imgsz (1024 by default) purely
+        # for speed/memory; if you train and test at the same resolution
+        # instead, expect a different (often lower) test score.
         model_best.val(
             data=data_path,
             split="test",
-            imgsz=cfg.get("imgsz", 1024),
+            imgsz=1920,
             batch=1,
             device=device,
             verbose=True,

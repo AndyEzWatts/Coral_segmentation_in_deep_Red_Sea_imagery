@@ -1,0 +1,96 @@
+# Weights & Biases hyperparameter sweep configuration.
+#
+# This is a genericized version of the actual sweep configs used to
+# produce every model reported in the manuscript (one per coral group,
+# with dataset_name/project changed). Bayesian search + hyperband
+# early-termination, matching the methodology described in the paper.
+#
+# Usage:
+#   1. Point `--data` in the `command` block below at your own
+#      configs/data_*.yaml, and edit `project`/`entity` for your W&B account.
+#   2. wandb sweep configs/sweep_config_example.yaml
+#      -> prints a sweep ID
+#   3. wandb agent <entity>/<project>/<sweep_id>
+#      -> launches one or more trials; run several agents in parallel
+#         (e.g. as separate SLURM array tasks) to parallelize the search
+#
+# `command` deliberately does NOT use wandb's default `${args}` CLI-flag
+# injection: train.py's argparse only exposes a handful of the keys
+# below as flags, and would error on the rest. Instead, every trial runs
+# train.py identically (--config + --wandb only); train.py's wb.init()
+# picks up this trial's sweep-selected values via wandb_run.config and
+# merges them into its own cfg dict before training (see the
+# cfg.update(dict(wandb_run.config)) line in Scripts/train.py) -- that's
+# what actually varies each trial's hyperparameters, not the CLI.
+
+program: Scripts/train.py
+command:
+  - ${env}
+  - python
+  - ${program}
+  - --config
+  - configs/train_config.yaml
+  - --data
+  - configs/data_mycoral_seg.yaml
+  - --wandb
+  - --wandb_project
+  - MyCoral_YOLO11x-Seg_2026   # keep this in sync with `project:` at the bottom of this file
+method: bayes
+metric:
+  goal: minimize
+  name: val/seg_loss
+
+parameters:
+  batch:
+    values: [4, 2]
+  lr0:
+    values: [0.005, 0.001, 0.003, 0.0001, 0.0003, 0.000001]
+  lrf:
+    values: [0.0001, 0.001]
+  epochs:
+    values: [50, 100, 300]
+  imgsz:
+    value: 1024        # match your training resolution -- see the README's note on
+                        # train/eval resolution mismatch before changing this
+  optimizer:
+    values: [AdamW, SGD, Adam]
+  patience:
+    values: [5, 15, 30]
+  warmup_epochs:
+    values: [0, 5, 7]
+  pretrained:
+    value: true
+  rect:
+    value: false
+  single_cls:
+    values: [true, false]
+  overlap_mask:
+    values: [false, true]
+  cos_lr:
+    values: [true, false]
+  fraction:
+    value: 1.0
+  augment:
+    values: [true, false]
+  mosaic:
+    value: 0.0          # kept disabled -- Scripts/data_augmentation.py already applies
+                          # its own polygon-aware mosaic augmentation upstream
+  mixup:
+    value: 0.0            # same reasoning as mosaic above
+  label_smoothing:
+    value: 0.0
+  dropout:
+    values: [0.0, 0.5]
+  scale:
+    values: [0, 0.5]
+  translate:
+    values: [0, 0.1]
+
+early_terminate:
+  type: hyperband
+  s: 2
+  eta: 3
+  max_iter: 27
+
+entity: your_wandb_entity
+project: MyCoral_YOLO11x-Seg_2026

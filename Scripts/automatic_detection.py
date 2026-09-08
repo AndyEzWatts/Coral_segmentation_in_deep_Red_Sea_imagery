@@ -14,6 +14,45 @@ from pytesseract import Output
 from ultralytics import YOLO
 
 
+def remove_contained_duplicates(boxes_list, masks_resized_list, containment_threshold=0.7):
+    """
+    Drop any mask that is mostly (> containment_threshold of its own area)
+    covered by a different, higher-confidence mask.
+
+    Standard box-IoU NMS cannot catch this pattern: a small mask nested
+    inside a much larger mask has LOW box IoU (the union area is
+    dominated by the big box), so NMS never flags the pair as
+    "overlapping" even though the masks clearly do -- confirmed on real
+    ROV footage, where two detections on the same colony persisted at
+    iou=0.5, 0.3, and even 0.2. This is a mask-level containment check
+    applied after NMS, not a replacement for it.
+
+    boxes_list / masks_resized_list must be the same length and already
+    resized to the frame's resolution (binary 0/1 arrays). Returns the
+    list of indices to keep, ranked by confidence (highest first).
+    """
+    n = len(masks_resized_list)
+    if n <= 1:
+        return list(range(n))
+    confs = [float(b.conf.cpu().numpy()[0]) for b in boxes_list]
+    areas = [int(np.sum(m)) for m in masks_resized_list]
+    order = sorted(range(n), key=lambda i: -confs[i])
+    kept = []
+    for idx in order:
+        this_area = areas[idx]
+        if this_area == 0:
+            continue
+        suppressed = False
+        for kept_idx in kept:
+            intersection = int(np.sum(np.logical_and(masks_resized_list[idx], masks_resized_list[kept_idx])))
+            if intersection / this_area > containment_threshold:
+                suppressed = True
+                break
+        if not suppressed:
+            kept.append(idx)
+    return kept
+
+
 def calculate_area_per_frame(coordinates_directory, frame_width=1920, frame_height=1080, actual_distance_cm=10):
     """Convert per-frame laser-dot YOLO labels into visible seafloor area (m²) per frame."""
     data = []
@@ -84,8 +123,14 @@ def analyze_video(video_meta, cfg, model):
 
     actual_laser_distance_cm = video_meta.get('actual_laser_distance_cm', cfg.get('actual_laser_distance_cm', 10))
     frame_interval = cfg.get('frame_interval_seconds', 30)
-    conf_threshold = cfg.get('conf_threshold', 0.1)
-    iou_threshold = cfg.get('iou_threshold', 0.1)
+    conf_threshold = cfg.get('conf_threshold', 0.25)
+    iou_threshold = cfg.get('iou_threshold', 0.5)
+    # IMPORTANT: must match (or be close to) the resolution the model was
+    # trained/validated at -- Ultralytics silently defaults to 640 if this
+    # is omitted, which will badly under-detect small/distant colonies.
+    imgsz = cfg.get('imgsz', 1920)
+    area_threshold_percent = cfg.get('area_threshold_percent', 15.0)
+    containment_threshold = cfg.get('containment_threshold', 0.7)
     roi_heading_rel = tuple(cfg['roi_heading_rel'])
     roi_depth_rel = tuple(cfg['roi_depth_rel'])
     output_dir_base = os.path.join(cfg['output_dir'], rov_dive)
@@ -214,20 +259,39 @@ def analyze_video(video_meta, cfg, model):
                           if format_text(r, depth_pattern)), 'N/A')
             print(f'Heading: {heading}, Depth: {depth}')
 
-            det = model(frame, conf=conf_threshold, iou=iou_threshold)[0]
-            coral_count = len(det.masks.data) if det.masks is not None else 0
+            det = model(frame, conf=conf_threshold, iou=iou_threshold, imgsz=imgsz, agnostic_nms=True)[0]
+            coral_count = 0
 
-            if coral_count > 0:
-                for idx, (mask_data, box) in enumerate(zip(det.masks.data, det.boxes)):
-                    score = round(box.conf.cpu().numpy()[0], 2)
-                    color = random_color()
+            if det.masks is not None and det.boxes is not None and len(det.masks.data) == len(det.boxes.data):
+                frame_pixel_area = frame.shape[0] * frame.shape[1]
+                max_area = (area_threshold_percent / 100.0) * frame_pixel_area
+
+                # Pass 1: resize masks once, apply the area filter (rejects
+                # oversized/malformed masks, e.g. covering half the frame).
+                area_pass_boxes, area_pass_masks = [], []
+                for mask_data, box in zip(det.masks.data, det.boxes):
                     mask_resized = cv2.resize(
                         mask_data.cpu().numpy().astype(np.uint8),
                         (frame.shape[1], frame.shape[0]),
+                        interpolation=cv2.INTER_NEAREST,
                     )
+                    if np.sum(mask_resized) <= max_area:
+                        area_pass_boxes.append(box)
+                        area_pass_masks.append(mask_resized)
+
+                # Pass 2: drop duplicate/fragment detections on the same
+                # colony that box-based NMS can't catch (see
+                # remove_contained_duplicates docstring).
+                keep_idx = remove_contained_duplicates(area_pass_boxes, area_pass_masks, containment_threshold)
+
+                for idx, i in enumerate(keep_idx):
+                    mask_resized, box = area_pass_masks[i], area_pass_boxes[i]
+                    score = round(box.conf.cpu().numpy()[0], 2)
+                    color = random_color()
                     contours, _ = cv2.findContours(mask_resized, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                     if contours:
                         contour = max(contours, key=cv2.contourArea)
+                        coral_count += 1
                         cv2.drawContours(frame, [contour], -1, color, 2)
                         x, y, w, h = cv2.boundingRect(contour)
                         cv2.putText(frame, f'Coral {idx + 1} ({score:.2f})',

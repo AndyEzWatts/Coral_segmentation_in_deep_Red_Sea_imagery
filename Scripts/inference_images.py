@@ -51,9 +51,48 @@ def apply_alternating_row_colors(filepath):
         print(f"Error applying colors: {e}")
 
 
+def remove_contained_duplicates(boxes_list, masks_resized_list, containment_threshold=0.7):
+    """
+    Drop any mask that is mostly (> containment_threshold of its own area)
+    covered by a different, higher-confidence mask.
+
+    Standard box-IoU NMS cannot catch this pattern: a small mask nested
+    inside a much larger mask has LOW box IoU (the union area is
+    dominated by the big box), so NMS never flags the pair as
+    "overlapping" even though the masks clearly do -- confirmed on real
+    ROV footage, where two detections on the same colony persisted at
+    iou=0.5, 0.3, and even 0.2. This is a mask-level containment check
+    applied after NMS, not a replacement for it.
+
+    boxes_list / masks_resized_list must be the same length and already
+    resized to the frame's resolution (binary 0/1 arrays). Returns the
+    list of indices to keep, ranked by confidence (highest first).
+    """
+    n = len(masks_resized_list)
+    if n <= 1:
+        return list(range(n))
+    confs = [float(b.conf.cpu().numpy()[0]) for b in boxes_list]
+    areas = [int(np.sum(m)) for m in masks_resized_list]
+    order = sorted(range(n), key=lambda i: -confs[i])
+    kept = []
+    for idx in order:
+        this_area = areas[idx]
+        if this_area == 0:
+            continue
+        suppressed = False
+        for kept_idx in kept:
+            intersection = int(np.sum(np.logical_and(masks_resized_list[idx], masks_resized_list[kept_idx])))
+            if intersection / this_area > containment_threshold:
+                suppressed = True
+                break
+        if not suppressed:
+            kept.append(idx)
+    return kept
+
+
 def analyze_images_in_folder(image_folder_path, model_path, conf_threshold, iou_threshold,
                               area_threshold_percent, tesseract_path, roi_depth_rel,
-                              output_dir, excel_filename):
+                              output_dir, excel_filename, imgsz=1920, containment_threshold=0.7):
 
     def get_unique_directory_name(base):
         counter = 1
@@ -214,30 +253,43 @@ def analyze_images_in_folder(image_folder_path, model_path, conf_threshold, iou_
             annotated = frame.copy()
             coral_count = 0
             try:
-                det = model(annotated, conf=conf_threshold, iou=iou_threshold, verbose=False, agnostic_nms=True)[0]
+                det = model(annotated, conf=conf_threshold, iou=iou_threshold, imgsz=imgsz,
+                            verbose=False, agnostic_nms=True)[0]
                 has_masks = det.masks is not None and len(det.masks.data) > 0
                 has_boxes = det.boxes is not None and len(det.boxes.data) > 0
 
                 if has_masks and has_boxes and len(det.masks.data) == len(det.boxes.data):
+                    # Pass 1: resize masks once, apply the area filter (rejects
+                    # oversized/malformed masks, e.g. covering half the frame).
+                    area_pass_boxes, area_pass_masks = [], []
                     for det_idx, (mask_data, box) in enumerate(zip(det.masks.data, det.boxes)):
-                        score = round(box.conf.cpu().numpy()[0], 2)
-                        color = random_color()
                         mask_resized = cv2.resize(
                             mask_data.cpu().numpy().astype(np.uint8),
                             (frame.shape[1], frame.shape[0]),
                             interpolation=cv2.INTER_NEAREST,
                         )
+                        if np.sum(mask_resized) <= max_area:
+                            area_pass_boxes.append(box)
+                            area_pass_masks.append(mask_resized)
+                        else:
+                            print(f"  Detection {det_idx + 1} rejected (area too large)")
+
+                    # Pass 2: drop duplicate/fragment detections on the same
+                    # colony that box-based NMS can't catch (see
+                    # remove_contained_duplicates docstring).
+                    keep_idx = remove_contained_duplicates(area_pass_boxes, area_pass_masks, containment_threshold)
+
+                    for mask_resized, box in [(area_pass_masks[i], area_pass_boxes[i]) for i in keep_idx]:
+                        score = round(box.conf.cpu().numpy()[0], 2)
+                        color = random_color()
                         contours, _ = cv2.findContours(mask_resized, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                         if contours:
                             contour = max(contours, key=cv2.contourArea)
-                            if cv2.contourArea(contour) <= max_area:
-                                coral_count += 1
-                                cv2.drawContours(annotated, [contour], -1, color, 2)
-                                x, y, w, h = cv2.boundingRect(contour)
-                                cv2.putText(annotated, f'Coral {coral_count} ({score:.2f})',
-                                            (x, max(y - 10, 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-                            else:
-                                print(f"  Detection {det_idx + 1} rejected (area too large)")
+                            coral_count += 1
+                            cv2.drawContours(annotated, [contour], -1, color, 2)
+                            x, y, w, h = cv2.boundingRect(contour)
+                            cv2.putText(annotated, f'Coral {coral_count} ({score:.2f})',
+                                        (x, max(y - 10, 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
                 elif has_boxes:
                     coral_count = len(det.boxes.data)
                     print("Warning: no masks found, using box count.")
@@ -283,10 +335,18 @@ def main():
     )
     parser.add_argument("--images", required=True, help="Path to folder containing images")
     parser.add_argument("--model", required=True, help="Path to YOLO model weights (.pt)")
-    parser.add_argument("--conf", type=float, default=0.1, help="Confidence threshold")
-    parser.add_argument("--iou", type=float, default=0.0, help="IOU threshold")
+    parser.add_argument("--conf", type=float, default=0.25, help="Confidence threshold")
+    parser.add_argument("--iou", type=float, default=0.5, help="IOU threshold (NMS)")
+    parser.add_argument("--imgsz", type=int, default=1920,
+                        help="Inference image size in pixels. IMPORTANT: must match (or be close to) the "
+                             "resolution the model was trained/validated at -- Ultralytics silently defaults "
+                             "to 640 if this is omitted, which will badly under-detect small/distant colonies.")
     parser.add_argument("--area_threshold", type=float, default=0.15,
                         help="Reject detections covering more than this fraction of the image")
+    parser.add_argument("--containment_threshold", type=float, default=0.7,
+                        help="Reject a detection if more than this fraction of its area is already covered "
+                             "by a larger, higher-confidence detection (catches duplicate/fragment detections "
+                             "on one colony that NMS misses -- see remove_contained_duplicates)")
     parser.add_argument("--tesseract_path", default=None,
                         help="Path to tesseract.exe (optional; uses system PATH if omitted)")
     parser.add_argument("--roi_depth", nargs=4, type=float,
@@ -316,6 +376,8 @@ def main():
         tuple(args.roi_depth),
         output_dir,
         args.excel_name,
+        imgsz=args.imgsz,
+        containment_threshold=args.containment_threshold,
     )
 
 

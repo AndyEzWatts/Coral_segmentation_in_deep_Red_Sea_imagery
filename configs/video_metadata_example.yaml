@@ -23,8 +23,30 @@ tesseract_path: null
 # Detection settings
 # -------------------------------------------------------------------
 frame_interval_seconds: 30   # extract one frame every N seconds for analysis
-conf_threshold: 0.1          # YOLO confidence threshold (detections below this are ignored)
-iou_threshold: 0.1           # YOLO IoU threshold for NMS
+conf_threshold: 0.25         # YOLO confidence threshold (detections below this are ignored).
+                              # We swept conf from 0.05-0.6 against the test set and found
+                              # precision/recall essentially flat up to ~0.25-0.3 for every
+                              # coral group, then precision climbs and recall drops past that --
+                              # 0.25 sits right at that plateau, trimming low-confidence noise
+                              # without giving up real detections.
+iou_threshold: 0.5           # YOLO IoU threshold for NMS (standard default; not swept in this study)
+imgsz: 1920                  # Inference resolution in pixels. IMPORTANT: must match (or be close
+                              # to) the resolution the model was trained/validated at --
+                              # Ultralytics silently defaults to 640 if this key is missing,
+                              # which will badly under-detect small/distant colonies. 1920 is the
+                              # native resolution of the source imagery and what every model in
+                              # this project was evaluated at.
+area_threshold_percent: 15.0 # Reject a detection if its mask covers more than this % of the
+                              # frame -- catches oversized/malformed masks. (A version of this
+                              # pipeline briefly shipped with this at 50%, contrary to what the
+                              # code comment claimed at the time -- confirm this value if you're
+                              # working from an older copy.)
+containment_threshold: 0.7   # Reject a detection if more than this fraction of its area is
+                              # already covered by a larger, higher-confidence detection.
+                              # Standard NMS compares box IoU, which can't catch a small mask
+                              # nested inside a much larger one (the union area is dominated by
+                              # the big box, so IoU stays low even though the masks clearly
+                              # overlap) -- this is a mask-level check applied after NMS.
 
 # Physical distance between the two laser dots (cm).
 # Used to convert pixel distance → cm/pixel → visible seafloor area (m²) per frame.
