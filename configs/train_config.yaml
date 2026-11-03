@@ -12,7 +12,7 @@ imgsz: 1024          # Input image size in pixels (square)
 # -------------------------------------------------------------------
 # Dataset  <-- point this at your YOLO dataset YAML
 # -------------------------------------------------------------------
-data: configs/data_example_seg.yaml   # path to YOLO dataset YAML (copy data_example_seg.yaml and edit)
+data: /path/to/MyDataset_Aug/data.yaml   # full path to the dataset's data.yaml (or pass --data)
 
 # -------------------------------------------------------------------
 # Training schedule
@@ -33,18 +33,18 @@ warmup_epochs: 0     # number of LR warmup epochs at the start of training
 
 # -------------------------------------------------------------------
 # Augmentation
-# Applied on top of the output from data_augmentation.py.
+# Applied on top of the output from augmentations.py.
 # Mosaic and Mixup are disabled here because they are already
-# applied (with polygon-aware mask handling) by data_augmentation.py.
+# applied (with polygon-aware mask handling) by augmentations.py.
 # -------------------------------------------------------------------
 augment: true        # enable Ultralytics built-in augmentations
-mosaic: 0.0          # mosaic probability (disabled — already done by data_augmentation.py)
+mosaic: 0.0          # mosaic probability (disabled — already done by augmentations.py)
 scale: 0.5           # random scale: image resized by ± this fraction
 translate: 0.1       # random translation: shifted by ± this fraction of image size
 degrees: 0.0         # random rotation: ± degrees (0 = disabled for underwater imagery)
 flipud: 0.0          # vertical flip probability (0 = disabled)
 fliplr: 0.5          # horizontal flip probability
-mixup: 0.0           # mixup probability (disabled — already done by data_augmentation.py)
+mixup: 0.0           # mixup probability (disabled — already done by augmentations.py)
 hsv_h: 0.01          # HSV hue jitter magnitude
 hsv_s: 0.6           # HSV saturation jitter magnitude
 hsv_v: 0.6           # HSV value (brightness) jitter magnitude

@@ -6,8 +6,8 @@
 # early-termination, matching the methodology described in the paper.
 #
 # Usage:
-#   1. Point `--data` in the `command` block below at your own
-#      configs/data_*.yaml, and edit `project`/`entity` for your W&B account.
+#   1. Point `--data` in the `command` block below at your dataset's
+#      data.yaml, and edit `project`/`entity` for your W&B account.
 #   2. wandb sweep configs/sweep_config_example.yaml
 #      -> prints a sweep ID
 #   3. wandb agent <entity>/<project>/<sweep_id>
@@ -31,7 +31,7 @@ command:
   - --config
   - configs/train_config.yaml
   - --data
-  - configs/data_mycoral_seg.yaml
+  - /path/to/MyDataset_Aug/data.yaml
   - --wandb
   - --wandb_project
   - MyCoral_YOLO11x-Seg_2026   # keep this in sync with `project:` at the bottom of this file
@@ -73,7 +73,7 @@ parameters:
   augment:
     values: [true, false]
   mosaic:
-    value: 0.0          # kept disabled -- Scripts/data_augmentation.py already applies
+    value: 0.0          # kept disabled -- Scripts/augmentations.py already applies
                           # its own polygon-aware mosaic augmentation upstream
   mixup:
     value: 0.0            # same reasoning as mosaic above
