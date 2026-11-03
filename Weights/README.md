@@ -58,11 +58,7 @@ metric for scleractinia, octocoral, and antipatharia. Whipcoral is the
 weakest-performing group in the study — its test split is small (52
 images), so its metrics carry more sampling noise than the others', and
 its thin/wiry morphology is disproportionately sensitive to train/eval
-resolution mismatch (see the note in the main README's Step 2). An
-alternative 12-ingredient soup built from a resolution-matched sweep beat
-these numbers on all four metrics in internal testing, but is not
-included here — the 4-ingredient soup above is kept as the reported model
-to match the manuscript's methodology exactly across all four groups. If
+resolution mismatch. If
 you're extending this work specifically on whip-coral-like thin
 morphologies, training and evaluating at matched (ideally higher)
 resolution is the first thing worth trying.
