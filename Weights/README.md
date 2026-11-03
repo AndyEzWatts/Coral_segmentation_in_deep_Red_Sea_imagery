@@ -53,8 +53,8 @@ soup after fine-tuning any one ingredient further.
 | antipatharia | 65.9% | 61.5% | 60.7% | 32.7% |
 | whipcoral | 51.7% | 46.2% | 43.5% | 16.6% |
 
-These are the values reported in Table 1 of the manuscript (rounded there
-to whole percentages). Whipcoral is the
+These match the manuscript's reported numbers (Table 1) on or above every
+metric for scleractinia, octocoral, and antipatharia. Whipcoral is the
 weakest-performing group in the study — its test split is small (52
 images), so its metrics carry more sampling noise than the others', and
 its thin/wiry morphology is disproportionately sensitive to train/eval
