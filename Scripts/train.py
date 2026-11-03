@@ -20,7 +20,7 @@ def parse_args():
     parser.add_argument("--config", default="configs/train_config.yaml", help="Path to train_config.yaml")
 
     # Overrides for common keys
-    parser.add_argument("--model", help="Model name, e.g. yolo11x-seg")
+    parser.add_argument("--model", help="Model name (e.g. yolo11x-seg) or path to a .pt weights file")
     parser.add_argument("--data", help="Path to YOLO dataset YAML")
     parser.add_argument("--epochs", type=int)
     parser.add_argument("--batch", type=int)
@@ -87,7 +87,9 @@ def main():
     print(f"Dataset: {data_path}")
     print(f"Model: {cfg['model']}")
 
-    model = YOLO(f"{cfg['model']}.pt")
+    # A model name such as "yolo11x-seg" gets ".pt" added; a path to a .pt file is used as is.
+    model_arg = str(cfg["model"])
+    model = YOLO(model_arg if model_arg.endswith(".pt") else f"{model_arg}.pt")
     model.info()
 
     print("Starting training...")
@@ -128,7 +130,9 @@ def main():
     )
     print("Training complete.")
 
-    best_weights = os.path.join(cfg.get("project", "results"), run_name, "weights", "best.pt")
+    # Ultralytics adds a number to the run folder (run2, run3, ...) when it already
+    # exists, so take the path of best.pt from the trainer itself.
+    best_weights = str(model.trainer.best)
     if not os.path.exists(best_weights):
         print(f"Warning: best.pt not found at {best_weights}. Skipping val/test runs.")
     else:

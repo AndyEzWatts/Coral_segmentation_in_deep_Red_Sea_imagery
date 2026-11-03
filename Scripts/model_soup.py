@@ -29,7 +29,7 @@ set of them, this script:
 ## Usage
 
     python Scripts/model_soup.py \\
-        --data configs/data_mycoral_seg.yaml \\
+        --data /path/to/MyDataset_Aug/data.yaml \\
         --candidates run1/weights/best.pt run2/weights/best.pt run3/weights/best.pt \\
         --imgsz 1920 \\
         --output_dir results/model_soup
@@ -38,7 +38,7 @@ Or point at a directory of candidate run folders instead of listing each
 checkpoint by hand:
 
     python Scripts/model_soup.py \\
-        --data configs/data_mycoral_seg.yaml \\
+        --data /path/to/MyDataset_Aug/data.yaml \\
         --candidates_dir results/sweep_runs \\
         --imgsz 1920 \\
         --output_dir results/model_soup
