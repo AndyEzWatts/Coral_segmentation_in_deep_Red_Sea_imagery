@@ -151,7 +151,7 @@ Runs YOLO inference on a folder of still images, saves annotated copies, and wri
 
 ```bash
 python Scripts/inference_images.py \
-    --images Image_example/Whipcoral \
+    --images /path/to/images \
     --model results/run/weights/best.pt
 ```
 
@@ -161,9 +161,9 @@ python Scripts/inference_images.py \
 | `--model` | required | Path to trained `.pt` weights |
 | `--conf` | `0.25` | Confidence threshold |
 | `--iou` | `0.5` | IoU threshold (NMS) |
-| `--imgsz` | `1920` | Inference resolution. Should match the resolution you evaluate/report at — see the note in Step 2. |
+| `--imgsz` | `1920` | Inference resolution. Should match the resolution you evaluate/report at. |
 | `--area_threshold` | `0.15` | Reject a detection whose mask covers more than this fraction of the frame — filters out oversized/malformed masks |
-| `--containment_threshold` | `0.7` | Reject a detection if more than this fraction of its area is already covered by a larger, higher-confidence detection (see note below) |
+| `--containment_threshold` | `0.7` | Reject a detection if more than this fraction of its area is already covered by a larger, higher-confidence detection |
 | `--tesseract_path` | system PATH | Path to `tesseract.exe` (Windows) |
 | `--roi_depth` | calibrated | Depth OCR region: `CX CY W H` in relative coords |
 | `--output_dir` | parent of `--images` | Output directory |
@@ -186,7 +186,7 @@ cp configs/video_metadata_example.yaml configs/my_survey.yaml
 
 Set `model_path` to a trained checkpoint — either your own `results/run/weights/best.pt` or, to reproduce the manuscript's results directly, one of the pretrained soups from the KAUST Research Repository (see [Data availability](#data-availability) and [`Weights/README.md`](Weights/README.md)).
 
-Edit `configs/my_survey.yaml` — every key is documented with inline comments inside the file, including `conf_threshold` (0.25), `iou_threshold` (0.5), `imgsz` (1920), `area_threshold_percent` (15.0), and `containment_threshold` (0.7). These carry the same values and reasoning as the `Scripts/inference_images.py` defaults above — see that section for why the containment filter exists, and Step 2 for why `imgsz` matters as much as it does.
+Edit `configs/my_survey.yaml` — every key is documented with inline comments inside the file, including `conf_threshold` (0.25), `iou_threshold` (0.5), `imgsz` (1920), `area_threshold_percent` (15.0), and `containment_threshold` (0.7). These carry the same values and reasoning as the `Scripts/inference_images.py` defaults above.
 
 **2. Run analysis:**
 
