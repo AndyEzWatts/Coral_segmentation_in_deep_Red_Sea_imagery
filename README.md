@@ -184,7 +184,7 @@ Extracts frames at a fixed interval, runs YOLO detection, reads depth and headin
 cp configs/video_metadata_example.yaml configs/my_survey.yaml
 ```
 
-Set `model_path` to a trained checkpoint — either your own `results/run/weights/best.pt` or, to reproduce the manuscript's results directly, one of the pretrained soups from the KAUST Research Repository (see [Data availability](#data-availability) and [`Weights/README.md`](Weights/README.md)).
+Set `model_path` to a trained checkpoint — either your own `results/run/weights/best.pt` or, to reproduce the manuscript's results directly, one of the pretrained soups from the KAUST Research Repository (see [Data availability](#data-availability)).
 
 Edit `configs/my_survey.yaml` — every key is documented with inline comments inside the file, including `conf_threshold` (0.25), `iou_threshold` (0.5), `imgsz` (1920), `area_threshold_percent` (15.0), and `containment_threshold` (0.7). These carry the same values and reasoning as the `Scripts/inference_images.py` defaults above.
 
