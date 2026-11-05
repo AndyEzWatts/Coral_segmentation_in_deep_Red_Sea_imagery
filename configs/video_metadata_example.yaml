@@ -63,11 +63,11 @@ combined_output_path: results/rov_output/combined_results.xlsx   # merged Excel 
 # Video list — add one entry per ROV transect video
 # -------------------------------------------------------------------
 videos:
-  - video_path: Video_example/CHR0389_LowerMesophotic.mp4
+  - video_path: /path/to/your_video.mp4
     # Directory of per-frame laser-dot label files in YOLO bounding-box format.
     # Each .txt file corresponds to one video frame and contains exactly 2 lines
     # (one per laser dot): class_id  x_center  y_center  width  height
-    laser_coordinates_dir: Video_example/Laser_CHR0389_LowerMesophotic/train/labels
+    laser_coordinates_dir: /path/to/your_laser_labels
 
     rov_dive: CHR0389              # dive identifier — used as the output sub-folder name
     date: "2023-04-15"             # survey date (YYYY-MM-DD)
