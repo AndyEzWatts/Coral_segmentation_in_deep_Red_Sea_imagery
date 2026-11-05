@@ -4,6 +4,12 @@ Instance segmentation of deep-sea corals in ROV imagery using YOLOv11x-seg. The 
 
 ---
 
+## Authors
+
+Marta Ezeta Watts, Frankly Toro, Fabio Marchese, Laura Macrina, Silvia Vicario, Silvia Vimercati, Hamad D. Alhajri, Korhan Ayranci, Umair Bin Waheed, Vincent Pieribone, Mohammed Qurban, Carlos M. Duarte, Francesca Benzoni
+
+---
+
 ## Requirements
 
 - Python >= 3.10
@@ -17,7 +23,7 @@ Instance segmentation of deep-sea corals in ROV imagery using YOLOv11x-seg. The 
 
 ## Data availability
 
-The annotated datasets, the trained model weights and an example ROV video are hosted on the KAUST Research Repository.
+The annotated datasets, the trained model weights and ten example frames from an ROV video, with their laser-dot labels, are hosted on the KAUST Research Repository.
 
 KAUST Research Repository: [DOI to be added]
 
@@ -173,8 +179,9 @@ python Scripts/inference_images.py \
 
 ### Step 4 — ROV Video Analysis
 
-> The example video is on the KAUST Research Repository (see [Data availability](#data-availability)),
-> not in this repo.
+> The example ROV video is not shared. Ten frames from it, with their laser-dot labels, are on the
+> KAUST Research Repository (see [Data availability](#data-availability)) and can be run through Step 3.
+> This step needs a video, so run it on your own videos.
 
 Extracts frames at a fixed interval, runs YOLO detection, reads depth and heading from the video overlay via OCR, and computes laser-calibrated coral density (corals/m²). Outputs per-video Excel files, a combined file, and a summary sheet grouped by habitat and transect type.
 
@@ -218,10 +225,22 @@ Coral density is estimated from the visible seafloor area per frame, derived fro
 
 The pixel distance between the two dot centers is converted to a cm/pixel scale using `actual_laser_distance_cm`, then used to compute the visible area (m²) for each frame.
 
-Laser labels for the example video are provided in `Video_example/Laser_CHR0389_LowerMesophotic/train/labels/`. To annotate your own video, export laser dot labels from Roboflow or any YOLO-format annotation tool.
+Laser labels for the ten example frames are on the KAUST Research Repository, in `Video_example/Laser_CHR0389_LowerMesophotic/train/labels/`. To annotate your own video, export laser dot labels from Roboflow or any YOLO-format annotation tool.
 
 ---
 
 ## Citation
 
 > Paper under review. Citation will be added upon publication.
+
+---
+
+## Contributors
+
+[Frankly Toro](https://github.com/franktorg) contributed to the development of this pipeline.
+
+---
+
+## License
+
+This repository is licensed under the [Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). See [LICENSE](LICENSE).
