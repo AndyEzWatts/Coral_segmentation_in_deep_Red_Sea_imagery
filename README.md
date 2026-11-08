@@ -25,7 +25,7 @@ Marta Ezeta Watts, Frankly Toro, Fabio Marchese, Laura Macrina, Silvia Vicario, 
 
 The annotated datasets, the trained model weights and ten example frames from an ROV video, with their laser-dot labels, are hosted on the KAUST Research Repository.
 
-KAUST Research Repository: [DOI to be added]
+KAUST Research Repository: https://doi.org/10.25781/KAUST-30Y2K
 
 ---
 
